@@ -1,5 +1,5 @@
 {
-  "name": "passport-saml",
+  "name": "lever-passport-saml",
   "version": "0.14.0",
   "licenses": [
     {
@@ -22,15 +22,16 @@
   "contributors": [
     "Michael Bosworth",
     "Herbert Vojčík",
-    "Peter Loer"
+    "Peter Loer",
+    "Jyrki Laurila"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/bergie/passport-saml.git"
+    "url": "https://github.com/lever/passport-saml.git"
   },
   "main": "./lib/passport-saml",
   "dependencies": {
-    "passport-strategy": "*",
+    "passport-strategy": "^1.0.0",
     "q": "1.1.x",
     "xml2js": "0.4.x",
     "xml-crypto": "0.8.x",
