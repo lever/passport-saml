@@ -216,6 +216,32 @@ describe( 'passport-saml /', function() {
                    [ { _: 'urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport',
                        '$': { 'xmlns:saml': 'urn:oasis:names:tc:SAML:2.0:assertion' } } ] } ] } }
       },
+      { name: "Empty Config w/ HTTP-POST binding",
+        config: { authnRequestBinding: 'HTTP-POST' },
+        result: {
+          'samlp:AuthnRequest': 
+           { '$': 
+              { 'xmlns:samlp': 'urn:oasis:names:tc:SAML:2.0:protocol',
+                Version: '2.0',
+                ProtocolBinding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+                AssertionConsumerServiceURL: 'http://localhost:3033/login',
+                Destination: 'https://wwwexampleIdp.com/saml'},
+             'saml:Issuer': 
+              [ { _: 'onelogin_saml',
+                  '$': { 'xmlns:saml': 'urn:oasis:names:tc:SAML:2.0:assertion' } } ],
+             'samlp:NameIDPolicy': 
+              [ { '$': 
+                   { 'xmlns:samlp': 'urn:oasis:names:tc:SAML:2.0:protocol',
+                     Format: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+                     AllowCreate: 'true' } } ],
+             'samlp:RequestedAuthnContext': 
+              [ { '$': 
+                   { 'xmlns:samlp': 'urn:oasis:names:tc:SAML:2.0:protocol',
+                     Comparison: 'exact' },
+                  'saml:AuthnContextClassRef': 
+                   [ { _: 'urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport',
+                       '$': { 'xmlns:saml': 'urn:oasis:names:tc:SAML:2.0:assertion' } } ] } ] } }
+      },
       { name: "Config #2",
         config: {
           issuer: 'http://exampleSp.com/saml',
@@ -387,9 +413,18 @@ describe( 'passport-saml /', function() {
 
           request(requestOpts, function(err, response, body) {
             should.not.exist(err);
-            response.statusCode.should.equal(302);
-            var query = response.headers.location.match( /^[^\?]*\?(.*)$/ )[1];
-            var encodedSamlRequest = querystring.parse( query ).SAMLRequest;
+
+            var encodedSamlRequest;
+            if ( check.config.authnRequestBinding === "HTTP-POST" ) {
+              response.statusCode.should.equal(200);
+              body.should.match(/<!DOCTYPE html>[^]*<input.*name="SAMLRequest"[^]*<\/html>/);
+              encodedSamlRequest = body.match( /<input.*name="SAMLRequest" value="([^"]*)"/ )[1];
+            } else {
+              response.statusCode.should.equal(302);
+              var query = response.headers.location.match( /^[^\?]*\?(.*)$/ )[1];
+              encodedSamlRequest = querystring.parse( query ).SAMLRequest;
+            }
+
             var buffer = new Buffer(encodedSamlRequest, 'base64')
             if (check.config.skipRequestCompression)
               helper(null, buffer);
@@ -442,6 +477,40 @@ describe( 'passport-saml /', function() {
         user: {
           nameIDFormat: 'foo',
           nameID: 'bar'
+        }
+      });
+      parseString( logoutRequest, function( err, doc ) {
+        delete doc['samlp:LogoutRequest']['$']["ID"];
+        delete doc['samlp:LogoutRequest']['$']["IssueInstant"];
+        doc.should.eql( expectedRequest );
+        done();
+      });
+    });
+
+    it( 'generateLogoutRequest adds the NameQualifier and SPNameQualifier to the saml request', function( done ) {
+      var expectedRequest = { 
+        'samlp:LogoutRequest': 
+         { '$': 
+            { 'xmlns:samlp': 'urn:oasis:names:tc:SAML:2.0:protocol',
+              'xmlns:saml': 'urn:oasis:names:tc:SAML:2.0:assertion',
+              //ID: '_85ba0a112df1ffb57805',
+              Version: '2.0',
+              //IssueInstant: '2014-05-29T03:32:23Z',
+              Destination: 'foo' },
+           'saml:Issuer': 
+            [ { _: 'onelogin_saml',
+                '$': { 'xmlns:saml': 'urn:oasis:names:tc:SAML:2.0:assertion' } } ],
+           'saml:NameID': [ { _: 'bar', '$': { Format: 'foo',
+                                               SPNameQualifier: 'Service Provider',
+                                               NameQualifier: 'Identity Provider' } } ] } };
+
+      var samlObj = new SAML( { entryPoint: "foo" } );
+      var logoutRequest = samlObj.generateLogoutRequest({
+        user: {
+          nameIDFormat: 'foo',
+          nameID: 'bar',
+          nameQualifier: 'Identity Provider',
+          spNameQualifier: 'Service Provider'
         }
       });
       parseString( logoutRequest, function( err, doc ) {
