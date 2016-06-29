@@ -30,6 +30,9 @@
     "url": "https://github.com/lever/passport-saml.git"
   },
   "main": "./lib/passport-saml",
+  "files": [
+    "lib"
+  ],
   "dependencies": {
     "passport-strategy": "^1.0.0",
     "q": "1.1.x",
