@@ -51,7 +51,7 @@ Config parameter details:
  * `cert`: see 'security and signatures'
  * `privateCert`: see 'security and signatures'
  * `decryptionPvk`: optional private key that will be used to attempt to decrypt any encrypted assertions that are received
- * `signatureAlgorithm`: optionally set the signature algorithm for signing requests, valid values are 'sha1' (default) or 'sha256'
+ * `signatureAlgorithm`: optionally set the signature algorithm for signing requests, valid values are 'sha1' (default), 'sha256', or 'sha512'
 * Additional SAML behaviors
  * `additionalParams`: dictionary of additional query params to add to all requests
  * `additionalAuthorizeParams`: dictionary of additional query params to add to 'authorize' requests
@@ -117,7 +117,7 @@ Authentication requests sent by Passport-SAML can be signed using RSA-SHA1. To s
     privateCert: fs.readFileSync('./cert.pem', 'utf-8')
 ```
 
-It is a good idea to validate the incoming SAML Responses. For this, you can provide the Identity Provider's certificate using the `cert` confguration key:
+It is a good idea to validate the incoming SAML Responses. For this, you can provide the Identity Provider's public signing certificate using the `cert` configuration key:
 
 ```javascript
     cert: 'MIICizCCAfQCCQCY8tKaMc0BMjANBgkqh ... W=='
